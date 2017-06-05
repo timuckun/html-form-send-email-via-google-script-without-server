@@ -2,12 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0"> -->
     <meta name="description" content="contact form example">
   <title>Contact Form Example</title>
 </head>
 
 <body>
+<!--
   <h2 class="content-head is-center">Contact Us!</h2>
   <aside>
        <p>
@@ -16,39 +17,35 @@
            to send us a message.
        </p>
    </aside>
-
+-->
 <!-- START HERE -->
-   <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.6.0/pure-min.css">
-   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+  <!-- <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.6.0/pure-min.css"> -->
+   <!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css"> -->
    <!-- Style The Contact Form How Ever You Prefer -->
-   <link rel="stylesheet" href="https://cdn.rawgit.com/dwyl/html-form-send-email-via-google-script-without-server/master/style.css">
+   <!-- <link rel="stylesheet" href="https://cdn.rawgit.com/timuckun/html-form-send-email-via-google-script-without-server/master/style.css"> -->
 
   <form id="gform" method="POST" class="pure-form pure-form-stacked"
-  action="https://script.google.com/macros/s/AKfycbwMxYDrufp73bKdU8gMvxFDdHRuzcR4IKQUB33B7GqwyfyZS04/exec">
+  action="https://script.google.com/macros/s/AKfycby8_Vqyv8mQvjdDlPiBKY86B_Hl-dfKIO_TsJP9u0L2Kj9Eu-0/exec">
     <!-- change the form action to your script url -->
 
     <fieldset class="pure-group">
-      <label for="name">Name: </label>
-      <input id="name" name="name" placeholder="What your Mom calls you" />
+      <label for="date">Date: </label>
+      <input id="date" name="date" placeholder="Date" />
     </fieldset>
 
     <fieldset class="pure-group">
-      <label for="message">Message: </label>
-      <textarea id="message" name="message" rows="10"
-      placeholder="Tell us what's on your mind..."></textarea>
+      <label for="client">client: </label>
+      <input id="client" name="client" placeholder="ii"/>
     </fieldset>
 
     <fieldset class="pure-group">
-      <label for="email"><em>Your</em> Email Address:</label>
-      <input id="email" name="email" type="email" value=""
-      required placeholder="your.name@email.com"/>
-      <span id="email-invalid" style="visibility:hidden">
-        Must be a valid email address</span>
+      <label for="project">Project</label>
+      <input id="project" name="project" value=""/>
     </fieldset>
 
     <fieldset class="pure-group">
-      <label for="color">Favourite Color: </label>
-      <input id="color" name="color" placeholder="green" />
+      <label for="minutes">Minutes: </label>
+      <input id="minutes" name="minutes" placeholder="15" />
     </fieldset>
 
     <button class="button-success pure-button button-xlarge">
@@ -63,10 +60,86 @@
   </div>
 
   <!-- Submit the Form to Google Using "AJAX" -->
+  <!--
   <script data-cfasync="false" type="text/javascript"
-  src="https://cdn.rawgit.com/dwyl/html-form-send-email-via-google-script-without-server/master/form-submission-handler.js"></script>
-  <!-- <script data-cfasync="false" type="text/javascript"
-  src="/form-submission-handler.js"></script> -->
+  src="https://cdn.rawgit.com/timuckun/html-form-send-email-via-google-script-without-server/master/form-submission-handler.js"></script>
+-->
+<script data-cfasync="false" type="text/javascript">
+//src="/form-submission-handler.js"
+  function validEmail(email) { // see:
+    var re = /^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$/i;
+    return re.test(email);
+  }
+  // get all data in form and return object
+  function getFormData() {
+    var elements = document.getElementById("gform").elements; // all form elements
+    var fields = Object.keys(elements).map(function(k) {
+      if(elements[k].name !== undefined) {
+        return elements[k].name;
+      // special case for Edge's html collection
+      }else if(elements[k].length > 0){
+        return elements[k].item(0).name;
+      }
+    }).filter(function(item, pos, self) {
+      return self.indexOf(item) == pos && item;
+    });
+    var data = {};
+    fields.forEach(function(k){
+      data[k] = elements[k].value;
+      var str = ""; // declare empty string outside of loop to allow
+                    // it to be appended to for each item in the loop
+      if(elements[k].type === "checkbox"){ // special case for Edge's html collection
+        str = str + elements[k].checked + ", "; // take the string and append
+                                                // the current checked value to
+                                                // the end of it, along with
+                                                // a comma and a space
+        data[k] = str.slice(0, -2); // remove the last comma and space
+                                    // from the  string to make the output
+                                    // prettier in the spreadsheet
+      }else if(elements[k].length){
+        for(var i = 0; i < elements[k].length; i++){
+          if(elements[k].item(i).checked){
+            str = str + elements[k].item(i).value + ", "; // same as above
+            data[k] = str.slice(0, -2);
+          }
+        }
+      }
+    });
+    console.log(data);
+    return data;
+  }
+
+  function handleFormSubmit(event) {  // handles form submit withtout any jquery
+    event.preventDefault();           // we are submitting via xhr below
+    var data = getFormData();         // get the values submitted in the form
+
+    var url = event.target.action;  //
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', url);
+    // xhr.withCredentials = true;
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function() {
+        console.log( xhr.status, xhr.statusText )
+        console.log(xhr.responseText);
+        document.getElementById('gform').style.display = 'none'; // hide form
+        document.getElementById('thankyou_message').style.display = 'block';
+        return;
+    };
+    // url encode form data for sending as post data
+    var encoded = Object.keys(data).map(function(k) {
+        return encodeURIComponent(k) + '=' + encodeURIComponent(data[k])
+    }).join('&')
+    xhr.send(encoded);
+
+  }
+  function loaded() {
+    console.log('contact form submission handler loaded successfully');
+    // bind to the submit event of our form
+    var form = document.getElementById('gform');
+    form.addEventListener("submit", handleFormSubmit, false);
+  };
+  document.addEventListener('DOMContentLoaded', loaded, false);
+  </script>
 <!-- END -->
 
 </body>
